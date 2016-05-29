@@ -1,6 +1,12 @@
+#include <atlconv.h>
+#include <cstdlib>
+#include <iostream>
 #include <stdio.h>
-#include <windows.h>
 #include <tchar.h>
+#include <windows.h>
+#include <boost/program_options.hpp>
+
+using namespace boost::program_options;
 
 #define TARGET_WIN_NAME1 _T("VOICEROID＋ 結月ゆかり EX")
 #define TARGET_WIN_NAME2 _T("VOICEROID＋ 結月ゆかり EX*")
@@ -47,6 +53,50 @@ void sendText(HWND hwnd, TCHAR* text);
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	setlocale(LC_CTYPE, "");
+
+	options_description opt("オプション");
+	// コマンドライン引数定義
+	opt.add_options()
+		("help,h", "ヘルプを表示")
+		("output-file,o", value<std::string>()->default_value(""), "出力ファイルパス")
+		("input-file,i", value<std::string>()->default_value(""), "入力ファイルパス")
+		("sync,s", "同期モード(再生・保存が完了するまで待機します)");
+
+	// コマンドライン引数解析
+	variables_map argmap;
+	auto pr = parse_command_line(argc, argv, opt);
+	store(pr, argmap);
+	notify(argmap);
+
+	// 解析結果取得
+	std::string output_file = argmap["output-file"].as<std::string>();
+	std::string input_file = argmap["input-file"].as<std::string>();
+	bool is_sync_mode = !argmap["sync"].empty();
+	std::wstring echo_text = _T("");
+
+	// オプション以外のコマンドライン引数取得
+	for (auto const& str : collect_unrecognized(pr.options, include_positional)) {
+		echo_text.append(_T(" "));
+		echo_text.append(str);
+	}
+
+	// ヘルプ表示指定があるか、
+	// echo_text, input_file が両方とも空の場合、ヘルプ表示して終了
+	if (argmap.count("help") || 
+		(echo_text.compare(_T("")) == 0
+			&& input_file.compare("") == 0)) {
+		_TCHAR drive[_MAX_DRIVE];
+		_TCHAR dir[_MAX_DIR];
+		_TCHAR filename[_MAX_FNAME];
+		_TCHAR ext[_MAX_EXT];
+		_tsplitpath(argv[0], drive, dir, filename, ext);
+
+		std::wcout << "Usage: " << filename << ext << " [options] [TEXT]" << std::endl;
+		std::cout << opt << std::endl;
+		return 1;
+	}
+
 	// "VOICEROID＋ 結月ゆかり EX" を探す
 	EnumWindows(SearchYukari, 0x0);
 
@@ -55,7 +105,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	// なぜかこれでテキストエリアが消える...
 	SendMessage(textArea, WM_SETTEXT, (WPARAM)_T(""), NULL);
 	
-	sendText(textArea, _T("只今マイクのテスト中。"));
+	sendText(textArea, W2T((LPWSTR)echo_text.c_str()));
 
 	// "音声保存ボタン" を探して押下
 	HWND save_button = SearchSaveButton(yukari);
@@ -69,7 +119,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	HWND saveFilePath = SearchSaveFilePath(saveDialog);
 
 	// ファイル名入力
-	sendText(saveFilePath, _T("C:\\Users\\mikoto\\Music\\TEST.wav"));
+	// ファイル名を wstring に変換
+	wchar_t *wcs = new wchar_t[output_file.length() + 1];
+	mbstowcs(wcs, output_file.c_str(), output_file.length() + 1);
+
+    // ファイル名をテキストエリアに挿入
+	sendText(saveFilePath, W2T((LPWSTR)wcs));
+	delete [] wcs;
 
 	// "保存(S)" ボタン押下
 	HWND save_button_in_save_dialog = SearchSaveButtonInSaveDialog(saveDialog);
