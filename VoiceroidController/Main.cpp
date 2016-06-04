@@ -105,6 +105,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	// "VOICEROID＋ 結月ゆかり EX" を探す
 	EnumWindows(SearchYukari, 0x0);
 
+	if (yukari == NULL) {
+		fwprintf(stderr, _T("VOICEROID が見つかりません。\n"));
+		fwprintf(stderr, _T("VOICEROID を起動してください。\n"));
+
+		exit(1);
+	}
+
 	HWND textArea = SearchTextArea(yukari);
 
 	// なぜかこれでテキストエリアが消える...
