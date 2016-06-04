@@ -54,6 +54,7 @@ void sendText(HWND hwnd, TCHAR* text);
 int _tmain(int argc, _TCHAR* argv[])
 {
 	setlocale(LC_CTYPE, "");
+	std::ios::sync_with_stdio(true);
 
 	options_description opt("オプション");
 	// コマンドライン引数定義
@@ -92,9 +93,13 @@ int _tmain(int argc, _TCHAR* argv[])
 		_TCHAR ext[_MAX_EXT];
 		_tsplitpath(argv[0], drive, dir, filename, ext);
 
-		std::wcout << "Usage: " << filename << ext << " [options] [TEXT]" << std::endl;
-		std::cout << opt << std::endl;
-		return 1;
+		wprintf(L"Usage: %s%s [options] [text]\n", filename, ext);
+
+		std::stringstream helpStream;
+		helpStream << opt << std::endl;
+		printf(helpStream.str().c_str());
+
+		exit(1);
 	}
 
 	// "VOICEROID＋ 結月ゆかり EX" を探す
