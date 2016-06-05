@@ -11,11 +11,20 @@ using namespace boost::program_options;
 #define TARGET_WIN_NAME1 _T("VOICEROID＋ 結月ゆかり EX")
 #define TARGET_WIN_NAME2 _T("VOICEROID＋ 結月ゆかり EX*")
 #define SAVE_DIALOG_NAME _T("音声ファイルの保存")
+#define PLAY_BUTTON_NAME _T(" 再生")
+
 #define WAIT_TIME 1500
+#define END_PLAY_CHECK_INTERVAL 1000
 
 HWND yukari;
 HWND saveDialog;
 HWND confirmationOverwriteDialog;
+
+// テキストを読み上げる
+void echo(BOOL is_sync_mode);
+
+// 読み上げ音声をファイルに保存する
+void save(std::string output_file);
 
 // "VOICEROID＋ 結月ゆかり EX" ウィンドウを探す
 BOOL CALLBACK SearchYukari(HWND hwnd, LPARAM lp);
@@ -84,7 +93,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	// ヘルプ表示指定があるか、
 	// echo_text, input_file が両方とも空の場合、ヘルプ表示して終了
-	if (argmap.count("help") || 
+	if (argmap.count("help") ||
 		(echo_text.compare(_T("")) == 0
 			&& input_file.compare("") == 0)) {
 		_TCHAR drive[_MAX_DRIVE];
@@ -116,9 +125,23 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	// なぜかこれでテキストエリアが消える...
 	SendMessage(textArea, WM_SETTEXT, (WPARAM)_T(""), NULL);
-	
+
 	sendText(textArea, W2T((LPWSTR)echo_text.c_str()));
 
+	// 読み上げするかファイルに保存するか判定
+	if (output_file.length() == 0) {
+		// 読み上げ
+		echo(is_sync_mode);
+	} else {
+		// ファイルに保存
+		save(output_file);
+	}
+
+	exit(0);
+}
+
+// 読み上げ音声をファイルに保存する
+void save(std::string output_file) {
 	// "音声保存ボタン" を探して押下
 	HWND save_button = SearchSaveButton(yukari);
 	PostMessage(save_button, BM_CLICK, 0, 0);
@@ -135,7 +158,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	wchar_t *wcs = new wchar_t[output_file.length() + 1];
 	mbstowcs(wcs, output_file.c_str(), output_file.length() + 1);
 
-    // ファイル名をテキストエリアに挿入
+	// ファイル名をテキストエリアに挿入
 	sendText(saveFilePath, W2T((LPWSTR)wcs));
 	delete [] wcs;
 
@@ -151,8 +174,32 @@ int _tmain(int argc, _TCHAR* argv[])
 		HWND yes_button_in_confirmation_overwrite_dialog = SearchYesButtonInConfirmationOverwriteDialog(confirmationOverwriteDialog);
 		PostMessage(yes_button_in_confirmation_overwrite_dialog, BM_CLICK, 0, 0);
 	}
+}
 
-	exit(0);
+// テキストを読み上げる
+void echo(BOOL is_sync_mode) {
+	// "再生" ボタンを探す
+	HWND play_button = SearchPlayButton(yukari);
+
+	if (is_sync_mode) {
+		// 再生終了まで待つ
+		// TODO: タイムアウト入れるか検討する
+		SendMessage(play_button, BM_CLICK, 0, 0);
+
+		while (1) {
+			Sleep(END_PLAY_CHECK_INTERVAL);
+			TCHAR strWindowText[1024];
+
+			GetWindowText(play_button, strWindowText, 1024);
+
+			if (_tcscmp(PLAY_BUTTON_NAME, strWindowText) == 0) {
+				break;
+			}
+		}
+	} else {
+		// 再生終了まで待たない
+		PostMessage(play_button, BM_CLICK, 0, 0);
+	}
 }
 
 // "VOICEROID＋ 結月ゆかり EX" ウィンドウを探す
