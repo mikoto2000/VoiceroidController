@@ -11,6 +11,7 @@ using namespace boost::program_options;
 #define TARGET_WIN_NAME1 _T("VOICEROID＋ 結月ゆかり EX")
 #define TARGET_WIN_NAME2 _T("VOICEROID＋ 結月ゆかり EX*")
 #define SAVE_DIALOG_NAME _T("音声ファイルの保存")
+#define SAVING_DIALOG_NAME _T("音声保存")
 #define PLAY_BUTTON_NAME _T(" 再生")
 
 #define WAIT_TIME 1500
@@ -18,6 +19,7 @@ using namespace boost::program_options;
 
 HWND yukari;
 HWND saveDialog;
+HWND savingDialog;
 HWND confirmationOverwriteDialog;
 
 // テキストを読み上げる
@@ -31,6 +33,9 @@ BOOL CALLBACK SearchYukari(HWND hwnd, LPARAM lp);
 
 // "音声ファイルの保存" ダイアログを探す
 BOOL CALLBACK SearchSaveDialog(HWND hwnd, LPARAM lp);
+
+// "音声保存" ダイアログを探す
+BOOL CALLBACK SearchSavingDialog(HWND hwnd, LPARAM lp);
 
 // 上書き確認ダイアログ
 BOOL CALLBACK SearchConfirmationOverwriteDialog(HWND hwnd, LPARAM lp);
@@ -174,6 +179,19 @@ void save(std::string output_file) {
 		HWND yes_button_in_confirmation_overwrite_dialog = SearchYesButtonInConfirmationOverwriteDialog(confirmationOverwriteDialog);
 		PostMessage(yes_button_in_confirmation_overwrite_dialog, BM_CLICK, 0, 0);
 	}
+
+	// 音声保存中ダイアログが消えるまで待機
+	// TODO: タイムアウト入れるか検討する
+	while (1) {
+		Sleep(END_PLAY_CHECK_INTERVAL);
+
+		savingDialog = NULL;
+		EnumWindows(SearchSavingDialog, 0x0);
+
+		if (savingDialog == NULL) {
+			break;
+		}
+	}
 }
 
 // テキストを読み上げる
@@ -227,6 +245,21 @@ BOOL CALLBACK SearchSaveDialog(HWND hwnd, LPARAM lp) {
 	{
 		_tprintf(_T("%s が見つかりました。\n"), strWindowText);
 		saveDialog = hwnd;
+		return false;
+	}
+
+	return true;
+}
+
+// "音声保存" ダイアログを探す
+BOOL CALLBACK SearchSavingDialog(HWND hwnd, LPARAM lp) {
+	TCHAR strWindowText[1024];
+	GetWindowText(hwnd, strWindowText, 1024);
+
+	if (_tcscmp(SAVING_DIALOG_NAME, strWindowText) == 0)
+	{
+		_tprintf(_T("%s が見つかりました。\n"), strWindowText);
+		savingDialog = hwnd;
 		return false;
 	}
 
