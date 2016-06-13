@@ -1,5 +1,6 @@
 #include <atlconv.h>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <stdio.h>
 #include <tchar.h>
@@ -27,6 +28,9 @@ void echo(BOOL is_sync_mode);
 
 // 読み上げ音声をファイルに保存する
 void save(std::string output_file);
+
+// ファイル内容を取得する
+std::wstring getContents(std::string filepath);
 
 // "VOICEROID＋ 結月ゆかり EX" ウィンドウを探す
 BOOL CALLBACK SearchYukari(HWND hwnd, LPARAM lp);
@@ -131,7 +135,18 @@ int _tmain(int argc, _TCHAR* argv[])
 	// なぜかこれでテキストエリアが消える...
 	SendMessage(textArea, WM_SETTEXT, (WPARAM)_T(""), NULL);
 
-	sendText(textArea, W2T((LPWSTR)echo_text.c_str()));
+	// 指定された引数に応じて
+	// コマンドライン引数かファイルから読み上げ文字列を取得する。
+	std::wstring contents;
+	if (input_file.compare("") == 0) {
+		// ファイル指定がなければコマンドライン引数を読み上げる
+		contents = echo_text;
+	} else {
+		// ファイル指定があればファイル内容を読み上げる
+		contents = getContents(input_file);
+	}
+
+	sendText(textArea, W2T((LPWSTR)contents.c_str()));
 
 	// 読み上げするかファイルに保存するか判定
 	if (output_file.length() == 0) {
@@ -218,6 +233,29 @@ void echo(BOOL is_sync_mode) {
 		// 再生終了まで待たない
 		PostMessage(play_button, BM_CLICK, 0, 0);
 	}
+}
+
+// ファイル内容を取得する
+std::wstring getContents(std::string filepath) {
+	std::ifstream ifs (filepath);
+
+	// ファイルオープン成否判定
+	if (ifs.fail())
+	{
+		std::cerr << "ファイルオープンに失敗しました。" << std::endl;
+		return NULL;
+	}
+
+	// TODO: これ何やってるんでしょーかね？
+	std::istreambuf_iterator<char> it(ifs);
+	std::istreambuf_iterator<char> last;
+	std::string str (it, last);
+
+	// string を wstring に変換
+	wchar_t *wcs = new wchar_t[str.length() + 1];
+	mbstowcs(wcs, str.c_str(), str.length() + 1);
+
+	return wcs;
 }
 
 // "VOICEROID＋ 結月ゆかり EX" ウィンドウを探す
