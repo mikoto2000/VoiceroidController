@@ -7,67 +7,12 @@
 #include <windows.h>
 #include <boost/program_options.hpp>
 
+#include "YukariEx.h"
+
 using namespace boost::program_options;
 
-#define TARGET_WIN_NAME1 _T("VOICEROID＋ 結月ゆかり EX")
-#define TARGET_WIN_NAME2 _T("VOICEROID＋ 結月ゆかり EX*")
-#define SAVE_DIALOG_NAME _T("音声ファイルの保存")
-#define SAVING_DIALOG_NAME _T("音声保存")
-#define PLAY_BUTTON_NAME _T(" 再生")
-
-#define WAIT_TIME 1500
-#define END_PLAY_CHECK_INTERVAL 1000
-
-HWND yukari;
-HWND saveDialog;
-HWND savingDialog;
-HWND confirmationOverwriteDialog;
-
-// テキストを読み上げる
-void echo(BOOL is_sync_mode);
-
-// 読み上げ音声をファイルに保存する
-void save(std::string output_file);
-
 // ファイル内容を取得する
-std::wstring getContents(std::string filepath);
-
-// "VOICEROID＋ 結月ゆかり EX" ウィンドウを探す
-BOOL CALLBACK SearchYukari(HWND hwnd, LPARAM lp);
-
-// "音声ファイルの保存" ダイアログを探す
-BOOL CALLBACK SearchSaveDialog(HWND hwnd, LPARAM lp);
-
-// "音声保存" ダイアログを探す
-BOOL CALLBACK SearchSavingDialog(HWND hwnd, LPARAM lp);
-
-// 上書き確認ダイアログ
-BOOL CALLBACK SearchConfirmationOverwriteDialog(HWND hwnd, LPARAM lp);
-
-// "テキストエリア" を探す
-HWND CALLBACK SearchTextArea(HWND mainWindow);
-
-// "再生ボタン" を探す
-HWND CALLBACK SearchPlayButton(HWND mainWindow);
-
-// "停止ボタン" を探す
-HWND CALLBACK SearchStopButton(HWND mainWindow);
-
-// "保存ボタン" を探す
-HWND CALLBACK SearchSaveButton(HWND mainWindow);
-
-// "ファイル名:" を探す
-HWND CALLBACK SearchSaveFilePath(HWND savaDialog);
-
-// "保存(S)" を探す
-HWND CALLBACK SearchSaveButtonInSaveDialog(HWND savaDialog);
-
-// 上書き確認ダイアログ内の「はい」ボタンを探す
-HWND CALLBACK SearchYesButtonInConfirmationOverwriteDialog(HWND confirmationOverwriteDialog);
-
-// 指定したハンドラに text を送信する
-void sendText(HWND hwnd, TCHAR* text);
-
+std::string getContents(std::string filepath);
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -120,123 +65,38 @@ int _tmain(int argc, _TCHAR* argv[])
 		exit(1);
 	}
 
-	// "VOICEROID＋ 結月ゆかり EX" を探す
-	EnumWindows(SearchYukari, 0x0);
-
-	if (yukari == NULL) {
-		fwprintf(stderr, _T("VOICEROID が見つかりません。\n"));
-		fwprintf(stderr, _T("VOICEROID を起動してください。\n"));
-
-		exit(1);
-	}
-
-	HWND textArea = SearchTextArea(yukari);
-
-	// なぜかこれでテキストエリアが消える...
-	SendMessage(textArea, WM_SETTEXT, (WPARAM)_T(""), NULL);
-
 	// 指定された引数に応じて
 	// コマンドライン引数かファイルから読み上げ文字列を取得する。
-	std::wstring contents;
+	std::string contents;
 	if (input_file.compare("") == 0) {
-		// ファイル指定がなければコマンドライン引数を読み上げる
-		contents = echo_text;
+		// ファイル指定がなければコマンドライン引数を取得
+		char *mbs = new char[echo_text.length() * MB_CUR_MAX + 1];
+		wcstombs(mbs, echo_text.c_str(), echo_text.length() * MB_CUR_MAX + 1);
+		contents = mbs;
+		delete mbs;
 	} else {
-		// ファイル指定があればファイル内容を読み上げる
+		// ファイル指定があればファイル内容を取得
 		contents = getContents(input_file);
 	}
 
-	sendText(textArea, W2T((LPWSTR)contents.c_str()));
+	Voiceroid* voiceroid = new YukariEx();
 
 	// 読み上げするかファイルに保存するか判定
 	if (output_file.length() == 0) {
 		// 読み上げ
-		echo(is_sync_mode);
+		voiceroid->echo(contents, is_sync_mode);
 	} else {
 		// ファイルに保存
-		save(output_file);
+		voiceroid->save(contents, output_file, is_sync_mode);
 	}
+
+	delete voiceroid;
 
 	exit(0);
 }
 
-// 読み上げ音声をファイルに保存する
-void save(std::string output_file) {
-	// "音声保存ボタン" を探して押下
-	HWND save_button = SearchSaveButton(yukari);
-	PostMessage(save_button, BM_CLICK, 0, 0);
-	Sleep(WAIT_TIME);
-
-	// "音声ファイルの保存" ウィンドウを探す
-	EnumWindows(SearchSaveDialog, 0x0);
-
-	// ファイル名テキストエリアを探す
-	HWND saveFilePath = SearchSaveFilePath(saveDialog);
-
-	// ファイル名入力
-	// ファイル名を wstring に変換
-	wchar_t *wcs = new wchar_t[output_file.length() + 1];
-	mbstowcs(wcs, output_file.c_str(), output_file.length() + 1);
-
-	// ファイル名をテキストエリアに挿入
-	sendText(saveFilePath, W2T((LPWSTR)wcs));
-	delete [] wcs;
-
-	// "保存(S)" ボタン押下
-	HWND save_button_in_save_dialog = SearchSaveButtonInSaveDialog(saveDialog);
-	PostMessage(save_button_in_save_dialog, BM_CLICK, 0, 0);
-
-	Sleep(WAIT_TIME);
-
-	// "VOICEROID＋ 結月ゆかり EX" を探す
-	EnumWindows(SearchConfirmationOverwriteDialog, 0x0);
-	if (confirmationOverwriteDialog != NULL) {
-		HWND yes_button_in_confirmation_overwrite_dialog = SearchYesButtonInConfirmationOverwriteDialog(confirmationOverwriteDialog);
-		PostMessage(yes_button_in_confirmation_overwrite_dialog, BM_CLICK, 0, 0);
-	}
-
-	// 音声保存中ダイアログが消えるまで待機
-	// TODO: タイムアウト入れるか検討する
-	while (1) {
-		Sleep(END_PLAY_CHECK_INTERVAL);
-
-		savingDialog = NULL;
-		EnumWindows(SearchSavingDialog, 0x0);
-
-		if (savingDialog == NULL) {
-			break;
-		}
-	}
-}
-
-// テキストを読み上げる
-void echo(BOOL is_sync_mode) {
-	// "再生" ボタンを探す
-	HWND play_button = SearchPlayButton(yukari);
-
-	if (is_sync_mode) {
-		// 再生終了まで待つ
-		// TODO: タイムアウト入れるか検討する
-		SendMessage(play_button, BM_CLICK, 0, 0);
-
-		while (1) {
-			Sleep(END_PLAY_CHECK_INTERVAL);
-			TCHAR strWindowText[1024];
-
-			GetWindowText(play_button, strWindowText, 1024);
-
-			if (_tcscmp(PLAY_BUTTON_NAME, strWindowText) == 0) {
-				break;
-			}
-		}
-	} else {
-		// 再生終了まで待たない
-		PostMessage(play_button, BM_CLICK, 0, 0);
-	}
-}
-
 // ファイル内容を取得する
-std::wstring getContents(std::string filepath) {
+std::string getContents(std::string filepath) {
 	std::ifstream ifs (filepath);
 
 	// ファイルオープン成否判定
@@ -251,170 +111,6 @@ std::wstring getContents(std::string filepath) {
 	std::istreambuf_iterator<char> last;
 	std::string str (it, last);
 
-	// string を wstring に変換
-	wchar_t *wcs = new wchar_t[str.length() + 1];
-	mbstowcs(wcs, str.c_str(), str.length() + 1);
-
-	return wcs;
-}
-
-// "VOICEROID＋ 結月ゆかり EX" ウィンドウを探す
-BOOL CALLBACK SearchYukari(HWND hwnd, LPARAM lp) {
-	TCHAR strWindowText[1024];
-	GetWindowText(hwnd, strWindowText, 1024);
-
-	if (_tcscmp(TARGET_WIN_NAME1, strWindowText) == 0
-		    || _tcscmp(TARGET_WIN_NAME2, strWindowText) == 0)
-	{
-		_tprintf(_T("%s が見つかりました。\n"), strWindowText);
-		yukari = hwnd;
-		return false;
-	}
-
-	return true;
-}
-
-// "音声ファイルの保存" ダイアログを探す
-BOOL CALLBACK SearchSaveDialog(HWND hwnd, LPARAM lp) {
-	TCHAR strWindowText[1024];
-	GetWindowText(hwnd, strWindowText, 1024);
-
-	if (_tcscmp(SAVE_DIALOG_NAME, strWindowText) == 0)
-	{
-		_tprintf(_T("%s が見つかりました。\n"), strWindowText);
-		saveDialog = hwnd;
-		return false;
-	}
-
-	return true;
-}
-
-// "音声保存" ダイアログを探す
-BOOL CALLBACK SearchSavingDialog(HWND hwnd, LPARAM lp) {
-	TCHAR strWindowText[1024];
-	GetWindowText(hwnd, strWindowText, 1024);
-
-	if (_tcscmp(SAVING_DIALOG_NAME, strWindowText) == 0)
-	{
-		_tprintf(_T("%s が見つかりました。\n"), strWindowText);
-		savingDialog = hwnd;
-		return false;
-	}
-
-	return true;
-}
-
-// 上書き確認ダイアログを探す
-BOOL CALLBACK SearchConfirmationOverwriteDialog(HWND hwnd, LPARAM lp) {
-	TCHAR strWindowText[1024];
-	GetWindowText(hwnd, strWindowText, 1024);
-
-	if (_tcscmp(SAVE_DIALOG_NAME, strWindowText) == 0
-			&& saveDialog != hwnd)
-	{
-		_tprintf(_T("%s が見つかりました。\n"), strWindowText);
-		confirmationOverwriteDialog = hwnd;
-		return false;
-	}
-
-	return true;
-}
-
-// "テキストエリア" を探す
-HWND CALLBACK SearchTextArea(HWND mainWindow) {
-	HWND tmp = GetWindow(mainWindow, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_HWNDNEXT);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-
-	return tmp;
-}
-
-// "再生ボタン" を探す
-HWND CALLBACK SearchPlayButton(HWND mainWindow) {
-	HWND tmp = GetWindow(mainWindow, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_HWNDNEXT);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_HWNDNEXT);
-	tmp = GetWindow(tmp, GW_CHILD);
-
-	return tmp;
-}
-
-// "停止ボタン" を探す
-HWND CALLBACK SearchStopButton(HWND mainWindow) {
-	HWND tmp = GetWindow(mainWindow, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_HWNDNEXT);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_HWNDNEXT);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_HWNDNEXT);
-
-	return tmp;
-}
-
-// "音声保存ボタン" を探す
-HWND CALLBACK SearchSaveButton(HWND mainWindow) {
-	HWND tmp = GetWindow(mainWindow, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_HWNDNEXT);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_HWNDNEXT);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_HWNDNEXT);
-	tmp = GetWindow(tmp, GW_HWNDNEXT);
-
-	return tmp;
-}
-
-// "ファイル名:" を探す
-HWND CALLBACK SearchSaveFilePath(HWND savaDialog) {
-	HWND tmp = GetWindow(saveDialog, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-	tmp = GetWindow(tmp, GW_CHILD);
-
-	return tmp;
-}
-
-// "保存(S)ボタン" を探す
-HWND CALLBACK SearchSaveButtonInSaveDialog(HWND savaDialog) {
-	HWND tmp = GetWindow(saveDialog, GW_CHILD);
-	tmp = GetWindow(tmp, GW_HWNDNEXT);
-	tmp = GetWindow(tmp, GW_HWNDNEXT);
-
-	return tmp;
-}
-
-// 上書き確認ダイアログ内の「はい」ボタンを探す
-HWND CALLBACK SearchYesButtonInConfirmationOverwriteDialog(HWND confirmationOverwriteDialog) {
-	return GetWindow(confirmationOverwriteDialog, GW_CHILD);
-}
-
-// 指定したハンドラに text を送信する
-void sendText(HWND hwnd, TCHAR* text) {
-	for (int i = 0; i < _tcslen(text); i++) {
-		SendMessage(hwnd, WM_CHAR, (WPARAM)text[i], 0);
-	}
+	return str;
 }
 

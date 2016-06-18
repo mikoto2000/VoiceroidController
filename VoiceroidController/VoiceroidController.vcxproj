@@ -20,9 +20,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Voiceroid.cpp" />
+    <ClCompile Include="YukariEx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Voiceroid.h" />
+    <ClInclude Include="YukariEx.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6FB9854E-8881-492B-9806-9BAD45CD8C21}</ProjectGuid>
