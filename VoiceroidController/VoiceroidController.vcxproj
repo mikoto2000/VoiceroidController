@@ -19,15 +19,19 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Clipboard.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Voiceroid.cpp" />
+    <ClCompile Include="Yukari.cpp" />
     <ClCompile Include="YukariEx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Clipboard.h" />
     <ClInclude Include="Voiceroid.h" />
+    <ClInclude Include="Yukari.h" />
     <ClInclude Include="YukariEx.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

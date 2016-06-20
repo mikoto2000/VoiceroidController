@@ -7,6 +7,7 @@
 #include <windows.h>
 #include <boost/program_options.hpp>
 
+#include "Yukari.h"
 #include "YukariEx.h"
 
 using namespace boost::program_options;

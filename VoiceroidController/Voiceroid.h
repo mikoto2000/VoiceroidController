@@ -5,6 +5,11 @@
 #include <tchar.h>
 #include <windows.h>
 
+// 各種ウィンドウ検索時に使用する構造体
+struct SearchHwndParam {
+	HWND hwnd;
+};
+
 // 各種 VOICEROID の基底クラス
 class Voiceroid
 {

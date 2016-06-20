@@ -4,11 +4,6 @@
 
 #include "Voiceroid.h"
 
-// 各種ウィンドウ検索時に使用する構造体
-struct SearchHwndParam {
-	HWND hwnd;
-};
-
 // 保存確認ダイアログ検索時に使用する構造体
 struct SearchConfirmationOverwriteDialogParam {
 	HWND parentHwnd;
