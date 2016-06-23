@@ -7,6 +7,7 @@
 #include <windows.h>
 #include <boost/program_options.hpp>
 
+#include "VoiceroidFactory.h"
 #include "Yukari.h"
 #include "YukariEx.h"
 
@@ -24,6 +25,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	// コマンドライン引数定義
 	opt.add_options()
 		("help,h", "ヘルプを表示")
+		("voiceroid", value<std::string>()->default_value("YukariEx"), "読み上げ VOICEROID(Yukari, YukariEx)")
 		("output-file,o", value<std::string>()->default_value(""), "出力ファイルパス")
 		("input-file,i", value<std::string>()->default_value(""), "入力ファイルパス")
 		("sync,s", "同期モード(再生・保存が完了するまで待機します)");
@@ -35,6 +37,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	notify(argmap);
 
 	// 解析結果取得
+	std::string target_voiceroid_str = argmap["voiceroid"].as<std::string>();
 	std::string output_file = argmap["output-file"].as<std::string>();
 	std::string input_file = argmap["input-file"].as<std::string>();
 	bool is_sync_mode = !argmap["sync"].empty();
@@ -80,7 +83,17 @@ int _tmain(int argc, _TCHAR* argv[])
 		contents = getContents(input_file);
 	}
 
-	Voiceroid* voiceroid = new YukariEx();
+	// 引数に応じて誰を使用するかを決定する
+	VoiceroidType voiceroidType;
+	if (target_voiceroid_str.compare("Yukari") == 0) {
+		voiceroidType = VoiceroidType::YUKARI;
+	}
+	else if (target_voiceroid_str.compare("YukariEx") == 0) {
+		voiceroidType = VoiceroidType::YUKARI_EX;
+	}
+
+	// VOICEROID 作成
+	Voiceroid* voiceroid = VoiceroidFactory::create(voiceroidType);
 
 	// 読み上げするかファイルに保存するか判定
 	if (output_file.length() == 0) {
