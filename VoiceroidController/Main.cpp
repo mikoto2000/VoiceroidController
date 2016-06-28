@@ -16,6 +16,9 @@ using namespace boost::program_options;
 // ファイル内容を取得する
 std::string getContents(std::string filepath);
 
+// UTF8 文字列を SJIS 文字列にして返す
+std::string utf8toSjis(std::string srcUTF8);
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	setlocale(LC_CTYPE, "");
@@ -28,6 +31,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		("voiceroid", value<std::string>()->default_value("YukariEx"), "読み上げ VOICEROID(Yukari, YukariEx)")
 		("output-file,o", value<std::string>()->default_value(""), "出力ファイルパス")
 		("input-file,i", value<std::string>()->default_value(""), "入力ファイルパス")
+		("utf8,u", "入力ファイル文字コードを UTF8 として処理")
 		("sync,s", "同期モード(再生・保存が完了するまで待機します)");
 
 	// コマンドライン引数解析
@@ -40,6 +44,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	std::string target_voiceroid_str = argmap["voiceroid"].as<std::string>();
 	std::string output_file = argmap["output-file"].as<std::string>();
 	std::string input_file = argmap["input-file"].as<std::string>();
+	bool is_utf8 = argmap.count("utf8");
 	bool is_sync_mode = !argmap["sync"].empty();
 	std::wstring echo_text = _T("");
 
@@ -81,6 +86,12 @@ int _tmain(int argc, _TCHAR* argv[])
 	} else {
 		// ファイル指定があればファイル内容を取得
 		contents = getContents(input_file);
+
+		// ファイル文字コードに応じて文字列変換
+		if (is_utf8) {
+			// utf8
+			contents = utf8toSjis(contents);
+		}
 	}
 
 	// 引数に応じて誰を使用するかを決定する
@@ -107,6 +118,33 @@ int _tmain(int argc, _TCHAR* argv[])
 	delete voiceroid;
 
 	exit(0);
+}
+
+std::string utf8toSjis(std::string srcUTF8) {
+	//Unicodeへ変換後の文字列長を得る
+	int lenghtUnicode = MultiByteToWideChar(CP_UTF8, 0, srcUTF8.c_str(), srcUTF8.size() + 1, NULL, 0);
+
+	//必要な分だけUnicode文字列のバッファを確保
+	wchar_t* bufUnicode = new wchar_t[lenghtUnicode];
+
+	//UTF8からUnicodeへ変換
+	MultiByteToWideChar(CP_UTF8, 0, srcUTF8.c_str(), srcUTF8.size() + 1, bufUnicode, lenghtUnicode);
+
+	//ShiftJISへ変換後の文字列長を得る
+	int lengthSJis = WideCharToMultiByte(CP_THREAD_ACP, 0, bufUnicode, -1, NULL, 0, NULL, NULL);
+
+	//必要な分だけShiftJIS文字列のバッファを確保
+	char* bufShiftJis = new char[lengthSJis];
+
+	//UnicodeからShiftJISへ変換
+	WideCharToMultiByte(CP_THREAD_ACP, 0, bufUnicode, lenghtUnicode + 1, bufShiftJis, lengthSJis, NULL, NULL);
+
+	std::string strSJis(bufShiftJis);
+
+	delete bufUnicode;
+	delete bufShiftJis;
+
+	return strSJis;
 }
 
 // ファイル内容を取得する
