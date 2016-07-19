@@ -16,6 +16,9 @@ using namespace boost::program_options;
 // ファイル内容を取得する
 std::string getContents(std::string filepath);
 
+// wstring を string に変換する
+std::string wstring2string(const std::wstring &src);
+
 // UTF8 文字列を SJIS 文字列にして返す
 std::string utf8toSjis(std::string srcUTF8);
 
@@ -29,8 +32,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	opt.add_options()
 		("help,h", "ヘルプを表示")
 		("voiceroid", value<std::string>()->default_value("YukariEx"), "読み上げ VOICEROID(Yukari, YukariEx)")
-		("output-file,o", value<std::string>()->default_value(""), "出力ファイルパス")
-		("input-file,i", value<std::string>()->default_value(""), "入力ファイルパス")
+		("output-file,o", wvalue<std::wstring>(), "出力ファイルパス")
+		("input-file,i", wvalue<std::wstring>(), "入力ファイルパス")
 		("utf8,u", "入力ファイル文字コードを UTF8 として処理")
 		("sync,s", "同期モード(再生・保存が完了するまで待機します)");
 
@@ -42,11 +45,36 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	// 解析結果取得
 	std::string target_voiceroid_str = argmap["voiceroid"].as<std::string>();
-	std::string output_file = argmap["output-file"].as<std::string>();
-	std::string input_file = argmap["input-file"].as<std::string>();
+
+	// 出力ファイルパス取得
+	// (使用しているバージョンの boost_program_options では、
+	//  std::wstring に対して default_value を指定するとコンパイルエラーになるため、
+	//  オプションの有無チェックと代入を自前で実装した)
+	std::wstring woutput_file;
+	if (argmap.count("output-file")) {
+		woutput_file = argmap["output-file"].as<std::wstring>();
+	} else {
+		woutput_file = L"";
+	}
+
+	// 入力ファイルパス取得
+	// (使用しているバージョンの boost_program_options では、
+	//  std::wstring に対して default_value を指定するとコンパイルエラーになるため、
+	//  オプションの有無チェックと代入を自前で実装した)
+	std::wstring winput_file;
+	if (argmap.count("input-file")) {
+		winput_file = argmap["input-file"].as<std::wstring>();
+	} else {
+		winput_file = L"";
+	}
+
 	bool is_utf8 = argmap.count("utf8");
 	bool is_sync_mode = !argmap["sync"].empty();
 	std::wstring echo_text = _T("");
+
+	// wstring で受け取った文字列を string に変換
+	std::string output_file = wstring2string(woutput_file);
+	std::string input_file = wstring2string(winput_file);
 
 	// オプション以外のコマンドライン引数取得
 	for (auto const& str : collect_unrecognized(pr.options, include_positional)) {
@@ -79,10 +107,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	std::string contents;
 	if (input_file.compare("") == 0) {
 		// ファイル指定がなければコマンドライン引数を取得
-		char *mbs = new char[echo_text.length() * MB_CUR_MAX + 1];
-		wcstombs(mbs, echo_text.c_str(), echo_text.length() * MB_CUR_MAX + 1);
-		contents = mbs;
-		delete mbs;
+		contents = wstring2string(echo_text);
 	} else {
 		// ファイル指定があればファイル内容を取得
 		contents = getContents(input_file);
@@ -118,6 +143,16 @@ int _tmain(int argc, _TCHAR* argv[])
 	delete voiceroid;
 
 	exit(0);
+}
+
+std::string wstring2string(const std::wstring &src) {
+	char *mbs = new char[src.length() * MB_CUR_MAX + 1];
+	wcstombs(mbs, src.c_str(), src.length() * MB_CUR_MAX + 1);
+
+	std::string dest = mbs;
+	delete[] mbs;
+
+	return dest;
 }
 
 std::string utf8toSjis(std::string srcUTF8) {
