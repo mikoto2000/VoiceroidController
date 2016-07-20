@@ -13,6 +13,22 @@
 
 using namespace boost::program_options;
 
+// オプションを表す構造体
+struct Options {
+	// 読み上げ VOICEROID(Yukari, YukariEx)
+	std::string target_voiceroid_str;
+	// 出力ファイルパス
+	std::string output_file;
+	// 入力ファイルパス
+	std::string input_file;
+	// 入力ファイル文字コードを UTF8 として処理
+	bool is_utf8;
+	// 同期モード(再生・保存が完了するまで待機します)
+	bool is_sync_mode;
+	// 読み上げ文字列(引数として渡された場合)
+	std::wstring echo_text;
+} typedef Options;
+
 // ファイル内容を取得する
 std::string getContents(std::string filepath);
 
@@ -22,11 +38,61 @@ std::string wstring2string(const std::wstring &src);
 // UTF8 文字列を SJIS 文字列にして返す
 std::string utf8toSjis(std::string srcUTF8);
 
+// コマンドライン引数解析
+Options parseArgs(int argc, _TCHAR* argv[]);
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	setlocale(LC_CTYPE, "");
 	std::ios::sync_with_stdio(true);
 
+	// コマンドライン引数解析
+	Options options = parseArgs(argc, argv);
+
+	// 指定された引数に応じて
+	// コマンドライン引数かファイルから読み上げ文字列を取得する。
+	std::string contents;
+	if (options.input_file.compare("") == 0) {
+		// ファイル指定がなければコマンドライン引数を取得
+		contents = wstring2string(options.echo_text);
+	} else {
+		// ファイル指定があればファイル内容を取得
+		contents = getContents(options.input_file);
+
+		// ファイル文字コードに応じて文字列変換
+		if (options.is_utf8) {
+			// utf8
+			contents = utf8toSjis(contents);
+		}
+	}
+
+	// 引数に応じて誰を使用するかを決定する
+	VoiceroidType voiceroidType;
+	if (options.target_voiceroid_str.compare("Yukari") == 0) {
+		voiceroidType = VoiceroidType::YUKARI;
+	}
+	else if (options.target_voiceroid_str.compare("YukariEx") == 0) {
+		voiceroidType = VoiceroidType::YUKARI_EX;
+	}
+
+	// VOICEROID 作成
+	Voiceroid* voiceroid = VoiceroidFactory::create(voiceroidType);
+
+	// 読み上げするかファイルに保存するか判定
+	if (options.output_file.length() == 0) {
+		// 読み上げ
+		voiceroid->echo(contents, options.is_sync_mode);
+	} else {
+		// ファイルに保存
+		voiceroid->save(contents, options.output_file, options.is_sync_mode);
+	}
+
+	delete voiceroid;
+
+	exit(0);
+}
+
+Options parseArgs(int argc, _TCHAR* argv[]) {
 	options_description opt("オプション");
 	// コマンドライン引数定義
 	opt.add_options()
@@ -44,7 +110,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	notify(argmap);
 
 	// 解析結果取得
-	std::string target_voiceroid_str = argmap["voiceroid"].as<std::string>();
+	Options options;
+	options.target_voiceroid_str = argmap["voiceroid"].as<std::string>();
 
 	// 出力ファイルパス取得
 	// (使用しているバージョンの boost_program_options では、
@@ -68,25 +135,25 @@ int _tmain(int argc, _TCHAR* argv[])
 		winput_file = L"";
 	}
 
-	bool is_utf8 = argmap.count("utf8");
-	bool is_sync_mode = !argmap["sync"].empty();
-	std::wstring echo_text = _T("");
+	options.is_utf8 = argmap.count("utf8");
+	options.is_sync_mode = !argmap["sync"].empty();
+	options.echo_text = _T("");
 
 	// wstring で受け取った文字列を string に変換
-	std::string output_file = wstring2string(woutput_file);
-	std::string input_file = wstring2string(winput_file);
+	options.output_file = wstring2string(woutput_file);
+	options.input_file = wstring2string(winput_file);
 
 	// オプション以外のコマンドライン引数取得
 	for (auto const& str : collect_unrecognized(pr.options, include_positional)) {
-		echo_text.append(_T(" "));
-		echo_text.append(str);
+		options.echo_text.append(_T(" "));
+		options.echo_text.append(str);
 	}
 
 	// ヘルプ表示指定があるか、
 	// echo_text, input_file が両方とも空の場合、ヘルプ表示して終了
 	if (argmap.count("help") ||
-		(echo_text.compare(_T("")) == 0
-			&& input_file.compare("") == 0)) {
+		(options.echo_text.compare(_T("")) == 0
+			&& options.input_file.compare("") == 0)) {
 		_TCHAR drive[_MAX_DRIVE];
 		_TCHAR dir[_MAX_DIR];
 		_TCHAR filename[_MAX_FNAME];
@@ -102,47 +169,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		exit(1);
 	}
 
-	// 指定された引数に応じて
-	// コマンドライン引数かファイルから読み上げ文字列を取得する。
-	std::string contents;
-	if (input_file.compare("") == 0) {
-		// ファイル指定がなければコマンドライン引数を取得
-		contents = wstring2string(echo_text);
-	} else {
-		// ファイル指定があればファイル内容を取得
-		contents = getContents(input_file);
-
-		// ファイル文字コードに応じて文字列変換
-		if (is_utf8) {
-			// utf8
-			contents = utf8toSjis(contents);
-		}
-	}
-
-	// 引数に応じて誰を使用するかを決定する
-	VoiceroidType voiceroidType;
-	if (target_voiceroid_str.compare("Yukari") == 0) {
-		voiceroidType = VoiceroidType::YUKARI;
-	}
-	else if (target_voiceroid_str.compare("YukariEx") == 0) {
-		voiceroidType = VoiceroidType::YUKARI_EX;
-	}
-
-	// VOICEROID 作成
-	Voiceroid* voiceroid = VoiceroidFactory::create(voiceroidType);
-
-	// 読み上げするかファイルに保存するか判定
-	if (output_file.length() == 0) {
-		// 読み上げ
-		voiceroid->echo(contents, is_sync_mode);
-	} else {
-		// ファイルに保存
-		voiceroid->save(contents, output_file, is_sync_mode);
-	}
-
-	delete voiceroid;
-
-	exit(0);
+	return options;
 }
 
 std::string wstring2string(const std::wstring &src) {
