@@ -1,6 +1,7 @@
 #include <atlconv.h>
 #include <cstdlib>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <stdio.h>
 #include <tchar.h>
@@ -91,16 +92,18 @@ int _tmain(int argc, _TCHAR* argv[])
 	// VOICEROID 作成
 	Voiceroid* voiceroid = VoiceroidFactory::create(voiceroidType);
 
+
+	// 指定文字数を超えないように分割しながら読み上げさせるための準備。
+	std::wstring wcontents = string2wstring(contents);
+
+	std::list<std::wstring> list_string;
+	boost::split(list_string, wcontents, boost::is_any_of(DELIMITERS));
+
+	size_t size = 0;
+	std::wstringstream ss;
+
 	// 読み上げするかファイルに保存するか判定
 	if (options.output_file.length() == 0) {
-		// 指定文字数を超えないように分割しながら読み上げさせる。
-		std::wstring wcontents = string2wstring(contents);
-
-		std::list<std::wstring> list_string;
-		boost::split(list_string, wcontents, boost::is_any_of(DELIMITERS));
-
-		size_t size = 0;
-		std::wstringstream ss;
 
 		BOOST_FOREACH(std::wstring s, list_string) {
 
@@ -127,8 +130,44 @@ int _tmain(int argc, _TCHAR* argv[])
 		voiceroid->echo(wstring2string(ss.str()), options.is_sync_mode);
 
 	} else {
-		// ファイルに保存
-		voiceroid->save(contents, options.output_file, options.is_sync_mode);
+
+		size_t fileno = 0;
+
+		BOOST_FOREACH(std::wstring s, list_string) {
+
+			// 指定文字数を超える場合、
+			// 今までため込んでいたものを読み上げる。
+			// ただし、初回から超えていた場合はあきらめる。
+			if (size != 0 && size + s.length() > options.split_size) {
+
+				// ファイルに保存
+		
+				// ファイル名組み立て
+				_TCHAR drive[_MAX_DRIVE];
+				_TCHAR dir[_MAX_DIR];
+				_TCHAR filename[_MAX_FNAME];
+				_TCHAR ext[_MAX_EXT];
+				_tsplitpath(string2wstring(options.output_file).c_str(), drive, dir, filename, ext);
+
+				std::wstringstream dest;
+				dest << drive << dir << filename << L"_" << std::setfill(L'0') << std::setw(3) << std::right << fileno << ext;
+				voiceroid->save(wstring2string(ss.str()), wstring2string(dest.str()), options.is_sync_mode);
+
+				// ss リセット
+				ss.str(L"");
+				ss.clear();
+				size = 0;
+
+				fileno++;
+			}
+
+			// サイズを増やして文字列結合
+			size += s.length();
+			ss << s << L"。";
+		}
+
+		// 最後の保存
+		voiceroid->save(wstring2string(ss.str()), options.output_file, options.is_sync_mode);
 	}
 
 	delete voiceroid;
@@ -146,7 +185,7 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 		("input-file,i", wvalue<std::wstring>(), "入力ファイルパス")
 		("utf8,u", "入力ファイル文字コードを UTF8 として処理")
 		("sync,s", "同期モード(再生・保存が完了するまで待機します)")
-		("split-size", value<size_t>()->default_value(2000), "読み上げ文字列を分割する目安のサイズ");
+		("split-size", value<size_t>()->default_value(20000), "読み上げ文字列を分割する目安のサイズ");
 
 	// コマンドライン引数解析
 	variables_map argmap;
