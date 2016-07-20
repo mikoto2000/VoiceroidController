@@ -104,14 +104,10 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		BOOST_FOREACH(std::wstring s, list_string) {
 
-			if (size == 0
-				|| is_delimiter(s)) {
-				// 最初が指定文字数超えてたらこれはもうしょうがない。
-				size += s.length();
-				ss << s << L"。";
-			} else if (size + s.length() > options.split_size) {
-				// 指定文字数を超える場合、
-				// 今までため込んでいたものを読み上げる。
+			// 指定文字数を超える場合、
+			// 今までため込んでいたものを読み上げる。
+			// ただし、初回から超えていた場合はあきらめる。
+			if (size != 0 && size + s.length() > options.split_size) {
 
 				// 読み上げ
 				voiceroid->echo(wstring2string(ss.str()), options.is_sync_mode);
@@ -119,14 +115,12 @@ int _tmain(int argc, _TCHAR* argv[])
 				// ss リセット
 				ss.str(L"");
 				ss.clear();
-				size = s.length();
-				ss << s << L"。";
-			} else {
-				// 指定文字数を超えない場合、
-				// サイズを増やして文字列結合
-				size += s.length();
-				ss << s << L"。";
+				size = 0;
 			}
+
+			// サイズを増やして文字列結合
+			size += s.length();
+			ss << s << L"。";
 		}
 
 		// 最後の読み上げ
