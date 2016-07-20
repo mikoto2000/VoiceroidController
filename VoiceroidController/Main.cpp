@@ -5,11 +5,16 @@
 #include <stdio.h>
 #include <tchar.h>
 #include <windows.h>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
 
 #include "VoiceroidFactory.h"
 #include "Yukari.h"
 #include "YukariEx.h"
+
+#define DELIMITERS L".。"
 
 using namespace boost::program_options;
 
@@ -27,13 +32,21 @@ struct Options {
 	bool is_sync_mode;
 	// 読み上げ文字列(引数として渡された場合)
 	std::wstring echo_text;
+	// 読み上げ文字列を分割する目安のサイズ
+	size_t split_size;
 } typedef Options;
 
 // ファイル内容を取得する
 std::string getContents(std::string filepath);
 
+// 文字列がデリミタかどうか判定する
+bool is_delimiter(std::wstring str);
+
 // wstring を string に変換する
 std::string wstring2string(const std::wstring &src);
+
+// string を wstring に変換する
+std::wstring string2wstring(const std::string &src);
 
 // UTF8 文字列を SJIS 文字列にして返す
 std::string utf8toSjis(std::string srcUTF8);
@@ -80,8 +93,45 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	// 読み上げするかファイルに保存するか判定
 	if (options.output_file.length() == 0) {
-		// 読み上げ
-		voiceroid->echo(contents, options.is_sync_mode);
+		// 指定文字数を超えないように分割しながら読み上げさせる。
+		std::wstring wcontents = string2wstring(contents);
+
+		std::list<std::wstring> list_string;
+		boost::split(list_string, wcontents, boost::is_any_of(DELIMITERS));
+
+		size_t size = 0;
+		std::wstringstream ss;
+
+		BOOST_FOREACH(std::wstring s, list_string) {
+
+			if (size == 0
+				|| is_delimiter(s)) {
+				// 最初が指定文字数超えてたらこれはもうしょうがない。
+				size += s.length();
+				ss << s << L"。";
+			} else if (size + s.length() > options.split_size) {
+				// 指定文字数を超える場合、
+				// 今までため込んでいたものを読み上げる。
+
+				// 読み上げ
+				voiceroid->echo(wstring2string(ss.str()), options.is_sync_mode);
+
+				// ss リセット
+				ss.str(L"");
+				ss.clear();
+				size = s.length();
+				ss << s << L"。";
+			} else {
+				// 指定文字数を超えない場合、
+				// サイズを増やして文字列結合
+				size += s.length();
+				ss << s << L"。";
+			}
+		}
+
+		// 最後の読み上げ
+		voiceroid->echo(wstring2string(ss.str()), options.is_sync_mode);
+
 	} else {
 		// ファイルに保存
 		voiceroid->save(contents, options.output_file, options.is_sync_mode);
@@ -101,7 +151,8 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 		("output-file,o", wvalue<std::wstring>(), "出力ファイルパス")
 		("input-file,i", wvalue<std::wstring>(), "入力ファイルパス")
 		("utf8,u", "入力ファイル文字コードを UTF8 として処理")
-		("sync,s", "同期モード(再生・保存が完了するまで待機します)");
+		("sync,s", "同期モード(再生・保存が完了するまで待機します)")
+		("split-size", value<size_t>()->default_value(2000), "読み上げ文字列を分割する目安のサイズ");
 
 	// コマンドライン引数解析
 	variables_map argmap;
@@ -138,6 +189,7 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 	options.is_utf8 = argmap.count("utf8");
 	options.is_sync_mode = !argmap["sync"].empty();
 	options.echo_text = _T("");
+	options.split_size = argmap["split-size"].as<size_t>();
 
 	// wstring で受け取った文字列を string に変換
 	options.output_file = wstring2string(woutput_file);
@@ -178,6 +230,15 @@ std::string wstring2string(const std::wstring &src) {
 
 	std::string dest = mbs;
 	delete[] mbs;
+
+	return dest;
+}
+
+std::wstring string2wstring(const std::string &src) {
+	wchar_t *wcs = new wchar_t[src.length() + 1];
+	mbstowcs(wcs, src.c_str(), src.length() + 1);
+	std::wstring dest = wcs;
+	delete[] wcs;
 
 	return dest;
 }
@@ -226,5 +287,17 @@ std::string getContents(std::string filepath) {
 	std::string str (it, last);
 
 	return str;
+}
+
+bool is_delimiter(std::wstring str) {
+	for (wchar_t* it = DELIMITERS; *it; ++it) {
+		size_t index = str.find(*it);
+
+		if (index != std::string::npos) {
+			return TRUE;
+		}
+	}
+
+	return FALSE;
 }
 
