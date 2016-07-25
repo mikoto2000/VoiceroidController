@@ -167,7 +167,18 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 
 		// 最後の保存
-		voiceroid->save(wstring2string(ss.str()), options.output_file, options.is_sync_mode);
+		
+		// ファイル名組み立て
+		_TCHAR drive[_MAX_DRIVE];
+		_TCHAR dir[_MAX_DIR];
+		_TCHAR filename[_MAX_FNAME];
+		_TCHAR ext[_MAX_EXT];
+		_tsplitpath(string2wstring(options.output_file).c_str(), drive, dir, filename, ext);
+
+		std::wstringstream dest;
+		dest << drive << dir << filename << L"_" << std::setfill(L'0') << std::setw(3) << std::right << fileno << ext;
+		voiceroid->save(wstring2string(ss.str()), wstring2string(dest.str()), options.is_sync_mode);
+
 	}
 
 	delete voiceroid;
