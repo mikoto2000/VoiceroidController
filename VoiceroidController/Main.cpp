@@ -15,7 +15,7 @@
 #include "Yukari.h"
 #include "YukariEx.h"
 
-#define DELIMITERS L".。"
+#define DELIMITERS _T(".。")
 
 using namespace boost::program_options;
 
@@ -24,9 +24,9 @@ struct Options {
 	// 読み上げ VOICEROID(Yukari, YukariEx)
 	std::string target_voiceroid_str;
 	// 出力ファイルパス
-	std::string output_file;
+	std::wstring output_file;
 	// 入力ファイルパス
-	std::string input_file;
+	std::wstring input_file;
 	// 入力ファイル文字コードを UTF8 として処理
 	bool is_utf8;
 	// 同期モード(再生・保存が完了するまで待機します)
@@ -38,7 +38,7 @@ struct Options {
 } typedef Options;
 
 // ファイル内容を取得する
-std::string getContents(std::string filepath);
+std::wstring getContents(std::wstring filepath, bool is_utf8);
 
 // 文字列がデリミタかどうか判定する
 bool is_delimiter(std::wstring str);
@@ -65,19 +65,13 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	// 指定された引数に応じて
 	// コマンドライン引数かファイルから読み上げ文字列を取得する。
-	std::string contents;
-	if (options.input_file.compare("") == 0) {
+	std::wstring wcontents;
+	if (options.input_file.compare(_T("")) == 0) {
 		// ファイル指定がなければコマンドライン引数を取得
-		contents = wstring2string(options.echo_text);
+		wcontents = options.echo_text;
 	} else {
 		// ファイル指定があればファイル内容を取得
-		contents = getContents(options.input_file);
-
-		// ファイル文字コードに応じて文字列変換
-		if (options.is_utf8) {
-			// utf8
-			contents = utf8toSjis(contents);
-		}
+		wcontents = getContents(options.input_file, options.is_utf8);
 	}
 
 	// 引数に応じて誰を使用するかを決定する
@@ -94,7 +88,6 @@ int _tmain(int argc, _TCHAR* argv[])
 
 
 	// 指定文字数を超えないように分割しながら読み上げさせるための準備。
-	std::wstring wcontents = string2wstring(contents);
 
 	std::list<std::wstring> list_string;
 	boost::split(list_string, wcontents, boost::is_any_of(DELIMITERS));
@@ -116,14 +109,14 @@ int _tmain(int argc, _TCHAR* argv[])
 				voiceroid->echo(wstring2string(ss.str()), options.is_sync_mode);
 
 				// ss リセット
-				ss.str(L"");
+				ss.str(_T(""));
 				ss.clear();
 				size = 0;
 			}
 
 			// サイズを増やして文字列結合
 			size += s.length();
-			ss << s << L"。";
+			ss << s << _T("。");
 		}
 
 		// 最後の読み上げ
@@ -147,14 +140,14 @@ int _tmain(int argc, _TCHAR* argv[])
 				_TCHAR dir[_MAX_DIR];
 				_TCHAR filename[_MAX_FNAME];
 				_TCHAR ext[_MAX_EXT];
-				_tsplitpath(string2wstring(options.output_file).c_str(), drive, dir, filename, ext);
+				_tsplitpath(options.output_file.c_str(), drive, dir, filename, ext);
 
 				std::wstringstream dest;
-				dest << drive << dir << filename << L"_" << std::setfill(L'0') << std::setw(3) << std::right << fileno << ext;
+				dest << drive << dir << filename << _T("_") << std::setfill(L'0') << std::setw(3) << std::right << fileno << ext;
 				voiceroid->save(wstring2string(ss.str()), wstring2string(dest.str()), options.is_sync_mode);
 
 				// ss リセット
-				ss.str(L"");
+				ss.str(_T(""));
 				ss.clear();
 				size = 0;
 
@@ -163,7 +156,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 			// サイズを増やして文字列結合
 			size += s.length();
-			ss << s << L"。";
+			ss << s << _T("。");
 		}
 
 		// 最後の保存
@@ -173,10 +166,10 @@ int _tmain(int argc, _TCHAR* argv[])
 		_TCHAR dir[_MAX_DIR];
 		_TCHAR filename[_MAX_FNAME];
 		_TCHAR ext[_MAX_EXT];
-		_tsplitpath(string2wstring(options.output_file).c_str(), drive, dir, filename, ext);
+		_tsplitpath(options.output_file.c_str(), drive, dir, filename, ext);
 
 		std::wstringstream dest;
-		dest << drive << dir << filename << L"_" << std::setfill(L'0') << std::setw(3) << std::right << fileno << ext;
+		dest << drive << dir << filename << _T("_") << std::setfill(L'0') << std::setw(3) << std::right << fileno << ext;
 		voiceroid->save(wstring2string(ss.str()), wstring2string(dest.str()), options.is_sync_mode);
 
 	}
@@ -214,9 +207,9 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 	//  オプションの有無チェックと代入を自前で実装した)
 	std::wstring woutput_file;
 	if (argmap.count("output-file")) {
-		woutput_file = argmap["output-file"].as<std::wstring>();
+		options.output_file = argmap["output-file"].as<std::wstring>();
 	} else {
-		woutput_file = L"";
+		options.output_file = _T("");
 	}
 
 	// 入力ファイルパス取得
@@ -225,19 +218,15 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 	//  オプションの有無チェックと代入を自前で実装した)
 	std::wstring winput_file;
 	if (argmap.count("input-file")) {
-		winput_file = argmap["input-file"].as<std::wstring>();
+		options.input_file = argmap["input-file"].as<std::wstring>();
 	} else {
-		winput_file = L"";
+		options.input_file = _T("");
 	}
 
 	options.is_utf8 = argmap.count("utf8");
 	options.is_sync_mode = !argmap["sync"].empty();
 	options.echo_text = _T("");
 	options.split_size = argmap["split-size"].as<size_t>();
-
-	// wstring で受け取った文字列を string に変換
-	options.output_file = wstring2string(woutput_file);
-	options.input_file = wstring2string(winput_file);
 
 	// オプション以外のコマンドライン引数取得
 	for (auto const& str : collect_unrecognized(pr.options, include_positional)) {
@@ -249,14 +238,14 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 	// echo_text, input_file が両方とも空の場合、ヘルプ表示して終了
 	if (argmap.count("help") ||
 		(options.echo_text.compare(_T("")) == 0
-			&& options.input_file.compare("") == 0)) {
+			&& options.input_file.compare(_T("")) == 0)) {
 		_TCHAR drive[_MAX_DRIVE];
 		_TCHAR dir[_MAX_DIR];
 		_TCHAR filename[_MAX_FNAME];
 		_TCHAR ext[_MAX_EXT];
 		_tsplitpath(argv[0], drive, dir, filename, ext);
 
-		wprintf(L"Usage: %s%s [options] [text]\n", filename, ext);
+		wprintf(_T("Usage: %s%s [options] [text]\n"), filename, ext);
 
 		std::stringstream helpStream;
 		helpStream << opt << std::endl;
@@ -315,7 +304,7 @@ std::string utf8toSjis(std::string srcUTF8) {
 }
 
 // ファイル内容を取得する
-std::string getContents(std::string filepath) {
+std::wstring getContents(std::wstring filepath, bool is_utf8) {
 	std::ifstream ifs (filepath);
 
 	// ファイルオープン成否判定
@@ -330,7 +319,13 @@ std::string getContents(std::string filepath) {
 	std::istreambuf_iterator<char> last;
 	std::string str (it, last);
 
-	return str;
+	// ファイル文字コードに応じて文字列変換
+	if (is_utf8) {
+		// utf8
+		str = utf8toSjis(str);
+	}
+
+	return string2wstring(str);
 }
 
 bool is_delimiter(std::wstring str) {
