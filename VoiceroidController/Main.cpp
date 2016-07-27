@@ -331,15 +331,3 @@ std::wstring getContents(std::wstring filepath, bool is_utf8) {
 	return string2wstring(str);
 }
 
-bool is_delimiter(std::wstring str) {
-	for (wchar_t* it = DELIMITERS; *it; ++it) {
-		size_t index = str.find(*it);
-
-		if (index != std::string::npos) {
-			return TRUE;
-		}
-	}
-
-	return FALSE;
-}
-
