@@ -15,7 +15,10 @@
 #include "Yukari.h"
 #include "YukariEx.h"
 
+#define INSERT_DELIMITER _T("。")
 #define DELIMITERS _T(".。")
+
+#define EMPTY_STR _T("")
 
 using namespace boost::program_options;
 
@@ -66,7 +69,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	// 指定された引数に応じて
 	// コマンドライン引数かファイルから読み上げ文字列を取得する。
 	std::wstring wcontents;
-	if (options.input_file.compare(_T("")) == 0) {
+	if (options.input_file.compare(EMPTY_STR) == 0) {
 		// ファイル指定がなければコマンドライン引数を取得
 		wcontents = options.echo_text;
 	} else {
@@ -109,14 +112,14 @@ int _tmain(int argc, _TCHAR* argv[])
 				voiceroid->echo(wstring2string(ss.str()), options.is_sync_mode);
 
 				// ss リセット
-				ss.str(_T(""));
+				ss.str(EMPTY_STR);
 				ss.clear();
 				size = 0;
 			}
 
 			// サイズを増やして文字列結合
 			size += s.length();
-			ss << s << _T("。");
+			ss << s << INSERT_DELIMITER;
 		}
 
 		// 最後の読み上げ
@@ -147,7 +150,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				voiceroid->save(wstring2string(ss.str()), wstring2string(dest.str()), options.is_sync_mode);
 
 				// ss リセット
-				ss.str(_T(""));
+				ss.str(EMPTY_STR);
 				ss.clear();
 				size = 0;
 
@@ -156,7 +159,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 			// サイズを増やして文字列結合
 			size += s.length();
-			ss << s << _T("。");
+			ss << s << INSERT_DELIMITER;
 		}
 
 		// 最後の保存
@@ -209,7 +212,7 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 	if (argmap.count("output-file")) {
 		options.output_file = argmap["output-file"].as<std::wstring>();
 	} else {
-		options.output_file = _T("");
+		options.output_file = EMPTY_STR;
 	}
 
 	// 入力ファイルパス取得
@@ -220,12 +223,12 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 	if (argmap.count("input-file")) {
 		options.input_file = argmap["input-file"].as<std::wstring>();
 	} else {
-		options.input_file = _T("");
+		options.input_file = EMPTY_STR;
 	}
 
 	options.is_utf8 = argmap.count("utf8");
 	options.is_sync_mode = !argmap["sync"].empty();
-	options.echo_text = _T("");
+	options.echo_text = EMPTY_STR;
 	options.split_size = argmap["split-size"].as<size_t>();
 
 	// オプション以外のコマンドライン引数取得
@@ -237,8 +240,8 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 	// ヘルプ表示指定があるか、
 	// echo_text, input_file が両方とも空の場合、ヘルプ表示して終了
 	if (argmap.count("help") ||
-		(options.echo_text.compare(_T("")) == 0
-			&& options.input_file.compare(_T("")) == 0)) {
+		(options.echo_text.compare(EMPTY_STR) == 0
+			&& options.input_file.compare(EMPTY_STR) == 0)) {
 		_TCHAR drive[_MAX_DRIVE];
 		_TCHAR dir[_MAX_DIR];
 		_TCHAR filename[_MAX_FNAME];
