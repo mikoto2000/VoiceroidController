@@ -143,7 +143,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				_TCHAR dir[_MAX_DIR];
 				_TCHAR filename[_MAX_FNAME];
 				_TCHAR ext[_MAX_EXT];
-				_tsplitpath(options.output_file.c_str(), drive, dir, filename, ext);
+				_tsplitpath_s(options.output_file.c_str(), drive, dir, filename, ext);
 
 				std::wstringstream dest;
 				dest << drive << dir << filename << _T("_") << std::setfill(L'0') << std::setw(3) << std::right << fileno << ext;
@@ -169,7 +169,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		_TCHAR dir[_MAX_DIR];
 		_TCHAR filename[_MAX_FNAME];
 		_TCHAR ext[_MAX_EXT];
-		_tsplitpath(options.output_file.c_str(), drive, dir, filename, ext);
+		_tsplitpath_s(options.output_file.c_str(), drive, dir, filename, ext);
 
 		std::wstringstream dest;
 		dest << drive << dir << filename << _T("_") << std::setfill(L'0') << std::setw(3) << std::right << fileno << ext;
@@ -226,7 +226,7 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 		options.input_file = EMPTY_STR;
 	}
 
-	options.is_utf8 = argmap.count("utf8");
+	options.is_utf8 = argmap.count("utf8") > 0U;
 	options.is_sync_mode = !argmap["sync"].empty();
 	options.echo_text = EMPTY_STR;
 	options.split_size = argmap["split-size"].as<size_t>();
@@ -246,7 +246,7 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 		_TCHAR dir[_MAX_DIR];
 		_TCHAR filename[_MAX_FNAME];
 		_TCHAR ext[_MAX_EXT];
-		_tsplitpath(argv[0], drive, dir, filename, ext);
+		_tsplitpath_s(argv[0], drive, dir, filename, ext);
 
 		wprintf(_T("Usage: %s%s [options] [text]\n"), filename, ext);
 
@@ -261,8 +261,9 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 }
 
 std::string wstring2string(const std::wstring &src) {
+	size_t num = 0;
 	char *mbs = new char[src.length() * MB_CUR_MAX + 1];
-	wcstombs(mbs, src.c_str(), src.length() * MB_CUR_MAX + 1);
+	wcstombs_s(&num, mbs, src.length() * MB_CUR_MAX + 1, src.c_str(), src.length() * MB_CUR_MAX + 1);
 
 	std::string dest = mbs;
 	delete[] mbs;
@@ -271,8 +272,9 @@ std::string wstring2string(const std::wstring &src) {
 }
 
 std::wstring string2wstring(const std::string &src) {
+	size_t num;
 	wchar_t *wcs = new wchar_t[src.length() + 1];
-	mbstowcs(wcs, src.c_str(), src.length() + 1);
+	mbstowcs_s(&num, wcs, src.length() * MB_CUR_MAX + 1, src.c_str(), _TRUNCATE);
 	std::wstring dest = wcs;
 	delete[] wcs;
 
@@ -281,13 +283,13 @@ std::wstring string2wstring(const std::string &src) {
 
 std::string utf8toSjis(std::string srcUTF8) {
 	//Unicodeへ変換後の文字列長を得る
-	int lenghtUnicode = MultiByteToWideChar(CP_UTF8, 0, srcUTF8.c_str(), srcUTF8.size() + 1, NULL, 0);
+	int lenghtUnicode = MultiByteToWideChar(CP_UTF8, 0, srcUTF8.c_str(), (int)(srcUTF8.size()) + 1, NULL, 0);
 
 	//必要な分だけUnicode文字列のバッファを確保
 	wchar_t* bufUnicode = new wchar_t[lenghtUnicode];
 
 	//UTF8からUnicodeへ変換
-	MultiByteToWideChar(CP_UTF8, 0, srcUTF8.c_str(), srcUTF8.size() + 1, bufUnicode, lenghtUnicode);
+	MultiByteToWideChar(CP_UTF8, 0, srcUTF8.c_str(), (int)(srcUTF8.size()) + 1, bufUnicode, lenghtUnicode);
 
 	//ShiftJISへ変換後の文字列長を得る
 	int lengthSJis = WideCharToMultiByte(CP_THREAD_ACP, 0, bufUnicode, -1, NULL, 0, NULL, NULL);
