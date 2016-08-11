@@ -3,10 +3,12 @@
 #include "Voiceroid.h"
 #include "Yukari.h"
 #include "YukariEx.h"
+#include "Aoi.h"
 
 enum class VoiceroidType {
 	YUKARI,
-	YUKARI_EX
+	YUKARI_EX,
+	AOI
 };
 
 class VoiceroidFactory

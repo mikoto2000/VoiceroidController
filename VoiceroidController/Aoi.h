@@ -4,13 +4,13 @@
 
 #include "Voiceroid.h"
 
-// 「VOICEROID＋ 結月ゆかり EX」を表すクラス
-class YukariEx :
+// 「VOICEROID＋ 琴葉葵」を表すクラス
+class Aoi :
 	public Voiceroid
 {
 public:
-	YukariEx();
-	virtual ~YukariEx();
+	Aoi();
+	virtual ~Aoi();
 
 	// テキストを読み上げる
 	void echo(std::string sentence, BOOL isSync);
@@ -35,10 +35,10 @@ private:
 	static const _TCHAR* PLAY_BUTTON_NAME;
 
 	// メインウィンドウのウィンドハンドル
-	HWND yukari;
+	HWND aoi;
 
-	// "VOICEROID＋ 結月ゆかり EX" ウィンドウを探す
-	static BOOL CALLBACK SearchYukariEx(HWND hwnd, LPARAM lp);
+	// "VOICEROID＋ 琴葉葵" ウィンドウを探す
+	static BOOL CALLBACK SearchAoi(HWND hwnd, LPARAM lp);
 
 	// "音声ファイルの保存" ダイアログを探す
 	static BOOL CALLBACK SearchSaveDialog(HWND hwnd, LPARAM lp);

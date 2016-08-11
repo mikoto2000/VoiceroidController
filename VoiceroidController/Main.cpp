@@ -12,8 +12,6 @@
 #include <boost/program_options.hpp>
 
 #include "VoiceroidFactory.h"
-#include "Yukari.h"
-#include "YukariEx.h"
 
 #define INSERT_DELIMITER _T("。")
 #define DELIMITERS _T(".。")
@@ -84,6 +82,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	else if (options.target_voiceroid_str.compare("YukariEx") == 0) {
 		voiceroidType = VoiceroidType::YUKARI_EX;
+	}
+	else if (options.target_voiceroid_str.compare("Aoi") == 0) {
+		voiceroidType = VoiceroidType::AOI;
 	}
 
 	// VOICEROID 作成
@@ -187,7 +188,7 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 	// コマンドライン引数定義
 	opt.add_options()
 		("help,h", "ヘルプを表示")
-		("voiceroid", value<std::string>()->default_value("YukariEx"), "読み上げ VOICEROID(Yukari, YukariEx)")
+		("voiceroid", value<std::string>()->default_value("YukariEx"), "読み上げ VOICEROID(Yukari, YukariEx, Aoi)")
 		("output-file,o", wvalue<std::wstring>(), "出力ファイルパス")
 		("input-file,i", wvalue<std::wstring>(), "入力ファイルパス")
 		("utf8,u", "入力ファイル文字コードを UTF8 として処理")

@@ -10,6 +10,12 @@ struct SearchHwndParam {
 	HWND hwnd;
 };
 
+// 保存確認ダイアログ検索時に使用する構造体
+struct SearchConfirmationOverwriteDialogParam {
+	HWND parentHwnd;
+	HWND targetHwnd;
+};
+
 // 各種 VOICEROID の基底クラス
 class Voiceroid
 {
