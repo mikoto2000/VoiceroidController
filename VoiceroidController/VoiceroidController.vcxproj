@@ -23,6 +23,7 @@
     <ClCompile Include="Clipboard.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Voiceroid.cpp" />
+    <ClCompile Include="VoiceroidEx.cpp" />
     <ClCompile Include="VoiceroidFactory.cpp" />
     <ClCompile Include="Yukari.cpp" />
     <ClCompile Include="YukariEx.cpp" />
@@ -34,6 +35,7 @@
     <ClInclude Include="Aoi.h" />
     <ClInclude Include="Clipboard.h" />
     <ClInclude Include="Voiceroid.h" />
+    <ClInclude Include="VoiceroidEx.h" />
     <ClInclude Include="VoiceroidFactory.h" />
     <ClInclude Include="Yukari.h" />
     <ClInclude Include="YukariEx.h" />
