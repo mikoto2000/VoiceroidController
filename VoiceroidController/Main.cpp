@@ -264,7 +264,7 @@ Options parseArgs(int argc, _TCHAR* argv[]) {
 std::string wstring2string(const std::wstring &src) {
 	size_t num = 0;
 	char *mbs = new char[src.length() * MB_CUR_MAX + 1];
-	wcstombs_s(&num, mbs, src.length() * MB_CUR_MAX + 1, src.c_str(), src.length() * MB_CUR_MAX + 1);
+	errno_t err = wcstombs_s(&num, mbs, src.length() * MB_CUR_MAX + 1, src.c_str(), _TRUNCATE);
 
 	std::string dest = mbs;
 	delete[] mbs;
@@ -275,7 +275,7 @@ std::string wstring2string(const std::wstring &src) {
 std::wstring string2wstring(const std::string &src) {
 	size_t num;
 	wchar_t *wcs = new wchar_t[src.length() + 1];
-	mbstowcs_s(&num, wcs, src.length() * MB_CUR_MAX + 1, src.c_str(), _TRUNCATE);
+	errno_t err = mbstowcs_s(&num, wcs, src.length() + 1, src.c_str(), _TRUNCATE);
 	std::wstring dest = wcs;
 	delete[] wcs;
 
