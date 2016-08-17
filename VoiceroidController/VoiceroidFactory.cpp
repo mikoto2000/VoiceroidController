@@ -15,6 +15,9 @@ Voiceroid* VoiceroidFactory::create(VoiceroidType type)
 	case(VoiceroidType::AOI) :
 		voiceroid = new Aoi();
 		break;
+	case(VoiceroidType::AKANE) :
+		voiceroid = new Akane();
+		break;
 	}
 
 	return voiceroid;

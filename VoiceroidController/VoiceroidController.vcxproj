@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Akane.cpp" />
     <ClCompile Include="Aoi.cpp" />
     <ClCompile Include="Clipboard.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -32,6 +33,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Akane.h" />
     <ClInclude Include="Aoi.h" />
     <ClInclude Include="Clipboard.h" />
     <ClInclude Include="Voiceroid.h" />

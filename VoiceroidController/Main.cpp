@@ -86,6 +86,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	else if (options.target_voiceroid_str.compare("Aoi") == 0) {
 		voiceroidType = VoiceroidType::AOI;
 	}
+	else if (options.target_voiceroid_str.compare("Akane") == 0) {
+		voiceroidType = VoiceroidType::AKANE;
+	}
 
 	// VOICEROID çÏê¨
 	Voiceroid* voiceroid = VoiceroidFactory::create(voiceroidType);
