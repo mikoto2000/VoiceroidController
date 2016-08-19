@@ -1,16 +1,8 @@
 #include "YukariEx.h"
 
 
-YukariEx::YukariEx()
+YukariEx::YukariEx() : VoiceroidEx(SearchMainWindow)
 {
-	// "VOICEROID{ Œ‹Œ‚ä‚©‚è EX" ‚ğ’T‚·
-	SearchHwndParam syep;
-	EnumWindows(YukariEx::SearchYukariEx, (LPARAM)&syep);
-	mainWindow = syep.hwnd;
-
-	if (mainWindow == NULL) {
-		throw _T("VOICEROID{ Œ‹Œ‚ä‚©‚è EX ‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ‚Å‚µ‚½B");
-	}
 }
 
 YukariEx::~YukariEx()
@@ -21,6 +13,18 @@ YukariEx::~YukariEx()
 const _TCHAR* YukariEx::TARGET_WIN_NAME1 = _T("VOICEROID{ Œ‹Œ‚ä‚©‚è EX");
 const _TCHAR* YukariEx::TARGET_WIN_NAME2 = _T("VOICEROID{ Œ‹Œ‚ä‚©‚è EX*");
 
+
+HWND YukariEx::SearchMainWindow() {
+	// "VOICEROID{ Œ‹Œ‚ä‚©‚è EX" ‚ğ’T‚·
+	SearchHwndParam syep;
+	EnumWindows(YukariEx::SearchYukariEx, (LPARAM)&syep);
+
+	if (syep.hwnd == NULL) {
+		throw _T("VOICEROID{ Œ‹Œ‚ä‚©‚è EX ‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ‚Å‚µ‚½B");
+	}
+
+	return syep.hwnd;
+}
 
 BOOL CALLBACK YukariEx::SearchYukariEx(HWND hwnd, LPARAM lp) {
 	SearchHwndParam* syep = (SearchHwndParam*)lp;

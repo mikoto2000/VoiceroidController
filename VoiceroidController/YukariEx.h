@@ -20,5 +20,6 @@ private:
 	static const _TCHAR* TARGET_WIN_NAME2;
 
 	// "VOICEROID＋ 結月ゆかり" ウィンドウを探す
+	static HWND SearchMainWindow();
 	static BOOL CALLBACK SearchYukariEx(HWND hwnd, LPARAM lp);
 };

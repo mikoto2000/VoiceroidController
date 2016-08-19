@@ -1,16 +1,8 @@
 #include "Akane.h"
 
 
-Akane::Akane()
+Akane::Akane() : VoiceroidEx(SearchMainWindow)
 {
-	// "VOICEROIDÅ{ ã’ótà©" ÇíTÇ∑
-	SearchHwndParam syep;
-	EnumWindows(Akane::SearchAkane, (LPARAM)&syep);
-	mainWindow = syep.hwnd;
-
-	if (mainWindow == NULL) {
-		throw _T("VOICEROIDÅ{ ã’ótà© Ç™å©Ç¬Ç©ÇËÇ‹ÇπÇÒÇ≈ÇµÇΩÅB");
-	}
 }
 
 Akane::~Akane()
@@ -21,6 +13,17 @@ Akane::~Akane()
 const _TCHAR* Akane::TARGET_WIN_NAME1 = _T("VOICEROIDÅ{ ã’ótà©");
 const _TCHAR* Akane::TARGET_WIN_NAME2 = _T("VOICEROIDÅ{ ã’ótà©*");
 
+HWND Akane::SearchMainWindow() {
+	// "VOICEROIDÅ{ ã’ótà©" ÇíTÇ∑
+	SearchHwndParam syep;
+	EnumWindows(Akane::SearchAkane, (LPARAM)&syep);
+
+	if (syep.hwnd == NULL) {
+		throw _T("VOICEROIDÅ{ ã’ótà© Ç™å©Ç¬Ç©ÇËÇ‹ÇπÇÒÇ≈ÇµÇΩÅB");
+	}
+	
+	return syep.hwnd;
+}
 
 BOOL CALLBACK Akane::SearchAkane(HWND hwnd, LPARAM lp) {
 	SearchHwndParam* syep = (SearchHwndParam*)lp;

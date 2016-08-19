@@ -1,5 +1,11 @@
 #include "VoiceroidEx.h"
 
+
+VoiceroidEx::VoiceroidEx(HWND (*searchFunc)(void))
+{
+	mainWindow = searchFunc();
+}
+
 VoiceroidEx::~VoiceroidEx()
 {
 }
@@ -59,8 +65,8 @@ void VoiceroidEx::save(std::string sentence, std::string outFilePath, BOOL isSyn
 
 	// "音声ファイルの保存" ウィンドウを探す
 	SearchHwndParam ssdp;
-	EnumWindows(VoiceroidEx::SearchSaveDialog, (LPARAM)&ssdp);
-	HWND saveDialog = ssdp.hwnd;
+		EnumWindows(VoiceroidEx::SearchSaveDialog, (LPARAM)&ssdp);
+		HWND saveDialog = ssdp.hwnd;
 
 	// ファイル名テキストエリアを探す
 	HWND saveFilePath = SearchSaveFilePath(saveDialog);

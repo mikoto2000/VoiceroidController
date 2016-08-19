@@ -1,16 +1,8 @@
 #include "Aoi.h"
 
 
-Aoi::Aoi()
+Aoi::Aoi() : VoiceroidEx(SearchMainWindow)
 {
-	// "VOICEROIDÅ{ ã’ótà®" ÇíTÇ∑
-	SearchHwndParam syep;
-	EnumWindows(Aoi::SearchAoi, (LPARAM)&syep);
-	mainWindow = syep.hwnd;
-
-	if (mainWindow == NULL) {
-		throw _T("VOICEROIDÅ{ ã’ótà® Ç™å©Ç¬Ç©ÇËÇ‹ÇπÇÒÇ≈ÇµÇΩÅB");
-	}
 }
 
 Aoi::~Aoi()
@@ -21,6 +13,18 @@ Aoi::~Aoi()
 const _TCHAR* Aoi::TARGET_WIN_NAME1 = _T("VOICEROIDÅ{ ã’ótà®");
 const _TCHAR* Aoi::TARGET_WIN_NAME2 = _T("VOICEROIDÅ{ ã’ótà®*");
 
+
+HWND Aoi::SearchMainWindow() {
+	// "VOICEROIDÅ{ ã’ótà®" ÇíTÇ∑
+	SearchHwndParam syep;
+	EnumWindows(Aoi::SearchAoi, (LPARAM)&syep);
+
+	if (syep.hwnd == NULL) {
+		throw _T("VOICEROIDÅ{ ã’ótà® Ç™å©Ç¬Ç©ÇËÇ‹ÇπÇÒÇ≈ÇµÇΩÅB");
+	}
+
+	return syep.hwnd;
+}
 
 BOOL CALLBACK Aoi::SearchAoi(HWND hwnd, LPARAM lp) {
 	SearchHwndParam* syep = (SearchHwndParam*)lp;

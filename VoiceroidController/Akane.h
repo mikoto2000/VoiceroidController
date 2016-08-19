@@ -20,5 +20,6 @@ private:
 	static const _TCHAR* TARGET_WIN_NAME2;
 
 	// "VOICEROID＋ 琴葉茜" ウィンドウを探す
+	static HWND SearchMainWindow();
 	static BOOL CALLBACK SearchAkane(HWND hwnd, LPARAM lp);
 };

@@ -9,6 +9,7 @@ class VoiceroidEx :
 	public Voiceroid
 {
 public:
+	VoiceroidEx(HWND (*searchFunc)(void));
 	virtual ~VoiceroidEx();
 
 	// テキストを読み上げる
@@ -17,11 +18,10 @@ public:
 	// 読み上げ音声をファイルに保存する
 	void save(std::string sentence, std::string outFilePath, BOOL isSync);
 
-protected:
+private:
 	// メインウィンドウのウィンドハンドル
 	HWND mainWindow;
 
-private:
 	// 音声ファイル保存ダイアログのダイアログ名
 	static const _TCHAR* SAVE_DIALOG_NAME;
 
