@@ -1,5 +1,6 @@
 #pragma once
 #include <atlconv.h>
+#include <sstream>
 #include <windows.h>
 
 #include "VoiceroidEx.h"

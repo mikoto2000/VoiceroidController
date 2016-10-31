@@ -18,6 +18,13 @@ Usage: VoiceroidController.exe [options] [text]
   --split-size arg (=20000)   読み上げ文字列を分割する目安のサイズ
 ```
 
+VOICEROID を自動起動させたい場合には、下記環境変数を設定して下さい。
+
+- VOICEROID_YUKARI_EX_EXE: 結月ゆかりの実行ファイルパス(未設定の場合、 `C:\Program Files (x86)\AHS\VOICEROID+\YukariEX\VOICEROID.exe`)
+- VOICEROID_AKANE_EXE: 言葉茜の実行ファイルパス(未設定の場合、 `C:\Program Files (x86)\AHS\VOICEROID+\Akane\VOICEROID.exe`)
+- VOICEROID_AOI_EXE: 言葉葵実行ファイルパス(未設定の場合、 `C:\Program Files (x86)\AHS\VOICEROID+\Aoi\VOICEROID.exe`)
+
+
 下記のような使い方を想定しています。
 
 ```bat
